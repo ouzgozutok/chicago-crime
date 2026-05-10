@@ -1,0 +1,97 @@
+version: '3.8'
+
+networks:
+  bigdata-net:
+    driver: bridge
+
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
+
+services:
+  # 1. Zookeeper
+  zookeeper:
+    image: zookeeper:3.9.2
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+    volumes:
+      - zookeeper_data:/data
+    networks:
+      - bigdata-net
+
+  # 2. Kafka Broker:
+  
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - bigdata-net
+
+# 3. Spark Master: bitnamilegacy reposuna çekildi
+  spark-master:
+    image: bitnamilegacy/spark:3.4.1
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+    ports:
+      - "8080:8080" # Web UI portu
+      - "7077:7077" # Spark Master portu
+    volumes:
+      - ../storage:/opt/spark/storage # Local depolama bağlantısı (Delta Lake için)
+    networks:
+      - bigdata-net
+
+  # 4. Spark Worker: bitnamilegacy reposuna çekildi
+  spark-worker:
+    image: bitnamilegacy/spark:3.4.1
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+    ports:
+      - "8081:8081" # Worker Web UI portu
+    volumes:
+      - ../storage:/opt/spark/storage # Master ile aynı veriyi görmesi için
+    depends_on:
+      - spark-master
+    networks:
+      - bigdata-net
+
+  # 5. MLflow Server
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.11.3
+    container_name: mlflow_server
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../storage:/mlflow/artifacts
+    command: >
+      mlflow server 
+      --host 0.0.0.0 
+      --port 5000 
+      --backend-store-uri sqlite:///mlflow.db 
+      --default-artifact-root /mlflow/artifacts
+    networks:
+      - bigdata-net
