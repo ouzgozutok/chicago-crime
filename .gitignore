@@ -1,0 +1,35 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# IDEs and Editors
+.vscode/
+.idea/
+.DS_Store
+
+# Project Specific Data (Delta Lake yerel verileri GitHub'a gitmemeli!)
+storage/
+data/
+*.csv
+*.parquet
+
+# Spark & Kafka logs/metastore
+spark-warehouse/
+metastore_db/
+derby.log
+checkpoint/
+.checkpoint/
+
+# MLflow local runs (Eğer merkezi sunucu yerine localde loglanırsa)
+mlruns/
+
+# Docker secrets
+.env
