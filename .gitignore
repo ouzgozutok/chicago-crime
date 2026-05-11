@@ -5,10 +5,18 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 
-# Virtual Environments
+# Python sanal ortamı
 venv/
 .venv/
-env/
+__pycache__/
+*.pyc
+
+# Büyük veri setleri ve geçici depolama alanları
+data/
+storage/
+docker/zookeeper_data/
+docker/kafka_data/
+mlflow.db
 
 # IDEs and Editors
 .vscode/
